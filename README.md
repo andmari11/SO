@@ -32,13 +32,7 @@
   - Semáforos, cerrojos y variables condicionales
   - Soporte hardware para implementación de primitivas de sincronización
 
-## Módulo 4. Gestión de entrada/salida
-- Arquitectura del sistema de E/S
-  - Recordatorio de técnicas HW de E/S
-  - Modelo de un dispositivo en LINUX. Anatomía de un driver
-  - Caso de dispositivos: de bloque (disco), de caracteres (terminal, impresora)
-
-## Módulo 5. Gestión de memoria
+## Módulo 4. Gestión de memoria
 - Multiprogramación. Particiones fijas y particiones variables
 - Memoria Virtual (MV)
   - Concepto de MV paginada. Políticas de carga y sustitución
@@ -47,3 +41,14 @@
 - Regiones de memoria de un proceso
   - Estructura y generación de un ejecutable
   - Operaciones sobre regiones
+  - 
+## Módulo 5. Gestión de entrada/salida
+- Arquitectura del sistema de E/S
+  - Recordatorio de técnicas HW de E/S
+  - Modelo de un dispositivo en LINUX. Anatomía de un driver
+  - Caso de dispositivos: de bloque (disco), de caracteres (terminal, impresora)
+
+
+
+
+
