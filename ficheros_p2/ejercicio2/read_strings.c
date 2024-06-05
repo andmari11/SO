@@ -16,12 +16,44 @@
  */
 char *loadstr(FILE *file)
 {
-	/* To be completed */
-	return NULL;	
+	char aux=getc(file);
+	int l=0;
+
+	while(aux!=EOF){
+
+		l++;
+		aux=getc(file);
+	}
+
+	if(l==0){
+
+		return "";
+	}
+	
+	fseek(file, 0, SEEK_SET);
+	char* ret=malloc(l+1);
+
+	if(fread(ret, 1, l, file)!=l){
+
+		free(ret);
+		err(3, "error al escribir");
+		return NULL;
+	}
+
+	ret[l]='\0';
+
+	return ret;	
 }
 
 int main(int argc, char *argv[])
 {
-	/* To be completed */
+	if(argc==2){
+		FILE* file=NULL;
+		/* Open file */
+		if ((file = fopen(argv[1], "r")) == NULL)
+			err(2,"The input file %s could not be opened",argv[1]);
+		else
+			fprintf(stderr, loadstr(file));
+	}
 	return 0;
 }

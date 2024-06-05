@@ -2,3 +2,13 @@ argv[0]= nombre programa
 argc= num argumentos (arg count)
 optind= proximo elemento a procesar de argv
 atoi= to int
+
+
+
+
+(EOF mejor) 
+fopen(argv[],"r")
+getc(file) en bucle y contamos longitud
+fseek(file, 0, SEEK_SET)
+fread(array, 1, longitud, file) returns longitud
+fwrite(string, 1, strlen(string), file) returns strlen(string)
