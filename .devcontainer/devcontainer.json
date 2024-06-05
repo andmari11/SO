@@ -1,0 +1,13 @@
+{
+    "name": "container-so",
+    "dockerFile": "Dockerfile",
+    "settings": {
+        "terminal.integrated.shell.linux": "/bin/bash"
+    },
+    "extensions": [
+                "redhat.fabric8-analytics",
+                "esbenp.prettier-vscode",
+                "ms-vscode.cpptools",
+                "ms-vscode.cpptools-extension-pack",
+        ]
+}

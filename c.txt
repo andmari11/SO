@@ -1,0 +1,4 @@
+argv[0]= nombre programa
+argc= num argumentos (arg count)
+optind= proximo elemento a procesar de argv
+atoi= to int
