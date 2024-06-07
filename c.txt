@@ -12,3 +12,7 @@ getc(file) en bucle y contamos longitud
 fseek(file, 0, SEEK_SET)
 fread(array, 1, longitud, file) returns longitud
 fwrite(string, 1, strlen(string), file) returns strlen(string)
+
+
+fgets(string, tamañoLinea, file)
+while((ret = strsep(&stringCOPIA, ":")) != NULL)
