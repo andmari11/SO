@@ -5,6 +5,8 @@
         "defs.h": "c",
         "dirent.h": "c",
         "stdio.h": "c",
-        "unistd.h": "c"
+        "unistd.h": "c",
+        "wait.h": "c",
+        "stat.h": "c"
     }
 }

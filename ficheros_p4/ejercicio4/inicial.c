@@ -11,11 +11,9 @@ int main(void)
     int fd1,fd2,i,pos;
     char c;
     char buffer[6];
-    char father[5] = "00000";
 
     fd1 = open("output.txt", O_CREAT | O_TRUNC | O_RDWR, S_IRUSR | S_IWUSR);
-    write(fd1, father, 5);
-
+    write(fd1, "00000", 5);
     for (i=1; i < 10; i++) {
         pos = lseek(fd1, 0, SEEK_CUR);
         if (fork() == 0) {
@@ -27,14 +25,12 @@ int main(void)
             exit(0);
         } else {
             /* Parent */
-             int status;
-            wait(status);
-            lseek(fd1, 5, SEEK_CUR);    
-            if(i < 9)
-                write(fd1,father,5);
+            lseek(fd1, 5, SEEK_CUR);
         }
-       
     }
+
+	//wait for all childs to finish
+    while (wait(NULL) != -1);
 
     lseek(fd1, 0, SEEK_SET);
     printf("File contents are:\n");

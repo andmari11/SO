@@ -1,0 +1,1 @@
+Si se usa un única variable para todos los hilos, estos compiten por la variable y lo que se muestra es incorrecto.(En nuestro caso salen todos los hilos con los mismos valores, que son los del hilo 5).
