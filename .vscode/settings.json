@@ -7,6 +7,10 @@
         "stdio.h": "c",
         "unistd.h": "c",
         "wait.h": "c",
-        "stat.h": "c"
+        "stat.h": "c",
+        "fcntl.h": "c",
+        "types.h": "c",
+        "signal.h": "c",
+        "pthread.h": "c"
     }
 }

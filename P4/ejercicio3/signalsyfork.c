@@ -6,11 +6,11 @@
 #include <sys/wait.h>
 
 /*programa que temporiza la ejecución de un proceso hijo */
-
-void sigalrm_handler(int signo){
-	kill(getpid(),SIGKILL);
+/* Manejador de la señal SIGALRM */
+void sigalrm_handler(int signo) {
+    // Enviar una señal SIGKILL al proceso hijo
+    kill(getpid(), SIGKILL);
 }
-
 int main(int argc, char **argv)
 {
 	if(argc < 2){
@@ -34,20 +34,23 @@ int main(int argc, char **argv)
 		struct sigaction sa;
 		sa.sa_handler = sigalrm_handler;
 		sa.sa_flags = 0;
-		
+		sigemptyset(&sa.sa_mask);
+
 		if(sigaction(SIGALRM, &sa, NULL) == -1){
 			perror ("Error al establecer el manejo de señales");
 			exit(EXIT_FAILURE);
 		};
 
-		alarm(5);
+		alarm(1);
 
-		waitpid(child_p, &status,0);
+		//waitpid(child_p, &status,0);
+        wait(&status);
 
-		if((WIFEXITED(status)))
-			printf("El hijo ha terminado normalmente\n");
-		else if ((WIFSIGNALED(status)))
-			printf("El hijo ha sido expulsado por una señal\n");
+        if (WIFEXITED(status)) {
+            printf("El proceso hijo terminó de forma normal con estado %d.\n", WEXITSTATUS(status));
+        } else if (WIFSIGNALED(status)) {
+            printf("El proceso hijo fue terminado por la señal %d.\n", WTERMSIG(status));
+        }
 	}	
 
 	return 0;

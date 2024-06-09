@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
 	//miramos el numero N de clientes
 	if (fscanf(file, "%d", &nClientes) == EOF) {
         fprintf(stderr, "Error reading file\n");
-        fclose(vips);
+        fclose(file);
         return EXIT_FAILURE;
     }
 
@@ -137,7 +137,6 @@ void enter_normal_client(int id)
 	}
 	turno_actual++;
 	clientesDentro++;
-	dance(id,0);
 
 	//desbloqueamos
 	pthread_mutex_unlock(&mutex);
@@ -162,8 +161,8 @@ void enter_vip_client(int id)
 		printf("No vips waiting\n");
 		pthread_cond_broadcast(&condVip);
 	}
-	dance(id, 1);
 	pthread_mutex_unlock(&mutex);	
+
 }
 
 void dance(int id, int isvip)
@@ -197,6 +196,8 @@ void *client(void *arg)
 	else{
 		enter_normal_client(cliente->id);
 	}
+	dance(cliente->id,cliente->isvip);
+
 	disco_exit(cliente->id, cliente->isvip);
 	//}
 }
