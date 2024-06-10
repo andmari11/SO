@@ -11,6 +11,7 @@
         "fcntl.h": "c",
         "types.h": "c",
         "signal.h": "c",
-        "pthread.h": "c"
+        "pthread.h": "c",
+        "semaphore.h": "c"
     }
 }
