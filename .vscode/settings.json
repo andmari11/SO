@@ -12,6 +12,8 @@
         "types.h": "c",
         "signal.h": "c",
         "pthread.h": "c",
-        "semaphore.h": "c"
+        "semaphore.h": "c",
+        "header.h": "c",
+        "mman.h": "c"
     }
 }
