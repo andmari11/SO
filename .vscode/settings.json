@@ -14,6 +14,7 @@
         "pthread.h": "c",
         "semaphore.h": "c",
         "header.h": "c",
-        "mman.h": "c"
+        "mman.h": "c",
+        "stdbool.h": "c"
     }
 }
