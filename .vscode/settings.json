@@ -15,6 +15,7 @@
         "semaphore.h": "c",
         "header.h": "c",
         "mman.h": "c",
-        "stdbool.h": "c"
+        "stdbool.h": "c",
+        "err.h": "c"
     }
 }
