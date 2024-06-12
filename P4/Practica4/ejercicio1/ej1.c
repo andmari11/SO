@@ -8,14 +8,13 @@
 #include <dirent.h>
 #include <errno.h>
 
+#define PATH_MAX 100
 struct options {
 	char *progname;
 	int recurse;
 };
 
 struct options opt;
-
-#define PATH_MAX 100
 
 void usage(void)
 {
@@ -30,26 +29,18 @@ void usage(void)
 /* apartado b */
 void list_dir(char *name)
 {
+	DIR *d;
+	struct dirent *de;
+	d = opendir(name);
+	if (d == NULL) {
+		warn("opendir(%s)", name);
+		return;
+	}
 
-
-// Abrir el directorio
-    DIR *dir = opendir(name);
-
-    if (dir == NULL) {
-        perror("Error al abrir el directorio");
-        return 1;
-    }
-
-    // Leer y mostrar los contenidos del directorio
-    struct dirent *entry;
-
-    while ((entry = readdir(dir)) != NULL) {
-        printf("%s\n", entry->d_name);
-    }
-
-    // Cerrar el directorio
-    closedir(dir);
-
+	while ((de = readdir(d))) {
+		printf("%s\n", de->d_name);
+	}
+	closedir(d);
 }
 
 /* apartado c */
@@ -57,65 +48,33 @@ void process_recurse(char *dirname, char *name)
 {
 	pid_t pid;
 	char path[PATH_MAX];
-
-
 }
 
 /* apartado c */
 void list_dir_recurse(char *name)
 {
-	DIR *d=opendir(name);
+	DIR *d;
 	struct dirent *de;
-    
+	d = opendir(name);
+	if (d == NULL) {
+		warn("opendir(%s)", name);
+		return;
+	}
 
-    if (d == NULL) {
-        perror("Error al abrir el directorio");
-        return 1;
-    }
+	while ((de = readdir(d))) {
+		if (strcmp(de->d_name, ".") == 0 || strcmp(de->d_name, "..") == 0)
+			continue;
 
-    // Leer y mostrar los contenidos del directorio
-  
+		printf("%s/%s\n", name, de->d_name);
 
-    while ((de = readdir(d)) != NULL) {
-        //printf("%s\n", de->d_name);
-         if (de->d_type == DT_DIR && strcmp(de->d_name, ".") != 0 && strcmp(de->d_name, "..") != 0) {
-       
-	      pid_t child_pid=fork();
-
-
-		  if(child_pid==0){
-
-
-          list_dir(de->d_name);
-		  exit(1);
-
-		  }else{
-
-			wait(NULL);
-
-		  }
-
-
-
-
-
-		 }
-
-
-	
-    }
-
-    // Cerrar el directorio
-    closedir(d);
-
-
-
-
-
-
-
-
-
+		// If it's a directory, recurse into it
+		if (de->d_type == DT_DIR) {
+			char path[PATH_MAX];
+			snprintf(path, PATH_MAX, "%s/%s", name, de->d_name);
+			list_dir_recurse(path);
+		}
+	}
+	closedir(d);
 }
 
 int main(int argc, char **argv)
@@ -123,38 +82,31 @@ int main(int argc, char **argv)
 	char *dirname = ".";
 	int o;
 	opt.progname = argv[0];
-	opt.recurse = 1;
+	opt.recurse = 0;
 
-
-    int option;
 	/* Apartado a: procesar opciones con getopt */
-    while((option = getopt(argc, argv, "hl:e")) != -1 ) {
-		switch(option) {
-         case 'h':
 
-		 break;
-
-		 case 'R':
-             
-
-			 opt.recurse=1;
-           break;
-
-	    
-
-		default:
-			exit(EXIT_FAILURE);
+	while ((o = getopt(argc, argv, "hR")) != -1) {
+		switch (o) {
+			case 'h':
+				usage();
+				return 0;
+			case 'R':
+				opt.recurse = 1;
+				break;
+			default:
+				usage();
+				return 1;
 		}
+	}
+
+	if (optind < argc) {
+		dirname = argv[optind];
 	}
 
 
 
-
 	/********************************************/
-
-	if (optind < argc) {
-        dirname = argv[optind];
-    }
 
 	if (opt.recurse)
 		printf("%s:\n", dirname);

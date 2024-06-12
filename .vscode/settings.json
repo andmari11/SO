@@ -16,6 +16,7 @@
         "header.h": "c",
         "mman.h": "c",
         "stdbool.h": "c",
-        "err.h": "c"
+        "err.h": "c",
+        "ctype.h": "c"
     }
 }
