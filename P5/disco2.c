@@ -1,176 +1,257 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <semaphore.h>
 #include <pthread.h>
 
-#define MAX_AFORO 10
+#define CAPACITY 5
+#define VIPSTR(vip) ((vip) == 2 ? "especial" : ((vip) ? "  vip  " : "not vip"))
 
-typedef struct {
-	int id;
-	int isvip;
-	int ticket;
-} client_t;
+int turno_actual_special = 0;
+int special_fila = 0;
+int nSpecials = 0;
 
-pthread_mutex_t m;
-pthread_cond_t normalClient,vipClient;
+int turno_actual_vip = 0;
+int vip_fila = 0;
+int nVips = 0;
 
-int turnoNormales=0;
-int turnoVips=0;
-int ticketsVips=0;
-int ticketsNormales=0;
-int huecoslibres=MAX_AFORO;
-int vips=0;
+int turno_actual = 0;
+int fila_normal = 0;
+int nClientes = 0;
 
-void exit_client(int id, int isVip){
+// cuantos clientes hay dentro
+int clientesDentro = 0;
+int specialsDentro = 0;
 
-    pthread_mutex_lock(&m);
-    huecoslibres++;
+pthread_mutex_t mutex;
+pthread_cond_t condNormal, condVip, condSpecial;
 
-    if(vips<=0)
-        pthread_cond_broadcast(&normalClient);
-    else pthread_cond_broadcast(&vipClient);
+struct tCliente
+{
 
-    pthread_mutex_unlock(&m);
+    int isvip, id;
+    pthread_t thread;
+};
 
-    if(isVip)
-        printf("El cliente vip con id %d se ha ido\n",id);
-    else printf("El cliente normal con id %d se ha ido\n",id);
+void enter_special_client(int id)
+{
+
+    pthread_mutex_lock(&mutex);
+    int turno = special_fila++;
+
+    while (clientesDentro == CAPACITY || turno_actual_special < turno)
+    {
+
+        pthread_cond_wait(&condSpecial, &mutex);
+    }
+    turno_actual_special++;
+    clientesDentro++;
+    specialsDentro++;
+
+    nSpecials--;
+    if (nSpecials == 0)
+    {
+        pthread_cond_broadcast(&condVip);
+        pthread_cond_broadcast(&condNormal);
+
+        printf("No specials waiting\n");
+    }
+    else
+    {
+        pthread_cond_broadcast(&condSpecial);
+    }
+
+    pthread_mutex_unlock(&mutex);
 }
 
+void enter_normal_client(int id);
 
+void enter_vip_client(int id);
 
-void dance(int time,int id,int isvip){
+void dance(int id, int isvip);
 
-    if(isvip)
-        printf("Cliente vip con id %d bailando una conga\n",id);
-    else printf("Cliente normal con id %d bailando una conga\n",id);
-    sleep(time);
+void disco_exit(int id, int isvip);
 
-    exit_client(id,isvip);
+void *client(void *arg);
+
+int main(int argc, char *argv[])
+{
+    FILE *file;
+
+    // iniciamos mutex y cond
+    if (pthread_mutex_init(&mutex, NULL))
+    {
+        perror("error mutex");
+        return -1;
+    }
+    if (pthread_cond_init(&condNormal, NULL) || pthread_cond_init(&condVip, NULL) || pthread_cond_init(&condSpecial, NULL))
+    {
+        perror("error cond");
+        return -1;
+    }
+
+    // abrimos el fichero
+    file = fopen("ejemplo.txt", "r");
+    if (file == NULL)
+    {
+
+        perror("error fichero");
+        return -1;
+    }
+
+    // miramos el numero N de clientes
+    if (fscanf(file, "%d", &nClientes) == EOF)
+    {
+        fprintf(stderr, "Error reading file\n");
+        fclose(file);
+        return EXIT_FAILURE;
+    }
+
+    // reservamos
+    struct tCliente *clientes = malloc(nClientes * sizeof(struct tCliente));
+
+    // escaneamos que clientes son vip
+    for (int i = 0; i < nClientes; i++)
+    {
+
+        fscanf(file, "%d", &clientes[i].isvip);
+        clientes[i].id = i;
+
+        nVips += clientes[i].isvip == 1;
+        nSpecials += clientes[i].isvip == 2;
+    }
+    fclose(file);
+
+    // creamos un hilo para cada cliente
+    for (int i = 0; i < nClientes; i++)
+    {
+
+        if (pthread_create(&clientes[i].thread, NULL, client, (void *)&clientes[i]))
+        {
+
+            perror("error al crar hilo");
+            return -1;
+        }
+    }
+    // llamamos de vuelta a los clientes
+    for (int i = 0; i < nClientes; i++)
+    {
+
+        if (pthread_join(clientes[i].thread, NULL))
+        {
+
+            perror("error al esperar al hilo");
+            return -1;
+        }
+    }
+
+    // destruimos y liberamos memoria
+    pthread_mutex_destroy(&mutex);
+    pthread_cond_destroy(&condNormal);
+    pthread_cond_destroy(&condVip);
+
+    free(clientes);
+    return 0;
 }
 
-void enter_normal_client(int id, int ticket){
+void enter_normal_client(int id)
+{
+    // bloqueamos al principio
+    pthread_mutex_lock(&mutex);
+    // tomamos el turno
+    int turno = fila_normal++;
 
-    pthread_mutex_lock(&m);
+    // esperamos a q pasen los vips y a que haya hueco
+    while (clientesDentro == CAPACITY || nVips > 0 || nSpecials > 0 || specialsDentro > 0 || clientesDentro == CAPACITY || turno_actual < turno)
+    {
 
-    while(huecoslibres == 0 || turnoNormales!=ticket)
-        pthread_cond_wait(&normalClient,&m);
+        pthread_cond_wait(&condNormal, &mutex);
+    }
 
-    turnoNormales++;
-    huecoslibres--;
+    turno_actual++;
+    clientesDentro++;
+    pthread_cond_broadcast(&condNormal);
 
-    pthread_cond_broadcast(&normalClient);
-
-    pthread_mutex_unlock(&m);
-
-    dance(5,id,0);
-
+    // desbloqueamos
+    pthread_mutex_unlock(&mutex);
 }
 
-void enter_vip_client(int id, int ticket){
+void enter_vip_client(int id)
+{
+    pthread_mutex_lock(&mutex);
+    int turno = vip_fila++;
 
-    pthread_mutex_lock(&m);
+    while (clientesDentro == CAPACITY || turno_actual_vip < turno || nSpecials > 0 || specialsDentro > 0)
+    {
 
-    while(huecoslibres == 0 || turnoVips!=ticket)
-        pthread_cond_wait(&vipClient,&m);
+        pthread_cond_wait(&condVip, &mutex);
+    }
+    turno_actual_vip++;
+    clientesDentro++;
 
-    turnoVips++;
-    huecoslibres--;
-    vips--;
+    nVips--;
+    printf("%d vips waiting, inside:\n", nVips);
 
-    if(vips<=0)
-        pthread_cond_broadcast(&normalClient);
-    else pthread_cond_broadcast(&vipClient);
+    if (nVips == 0)
+    {
+        pthread_cond_broadcast(&condNormal);
 
-    pthread_mutex_unlock(&m);
+        printf("No vips waiting\n");
+    }
+    else
+    {
+        pthread_cond_broadcast(&condVip);
+    }
 
-    dance(5,id,1);
+    pthread_mutex_unlock(&mutex);
+}
 
+void dance(int id, int isvip)
+{
+    printf("Client %2d (%s) dancing in disco\n", id, VIPSTR(isvip));
+    sleep((rand() % 3) + 1);
+}
+
+void disco_exit(int id, int isvip)
+{
+    pthread_mutex_lock(&mutex);
+
+    printf("- cliente[%2d] (%s) se va\n", id, VIPSTR(isvip));
+    clientesDentro--;
+    if (isvip == 2)
+    {
+        specialsDentro--;
+        pthread_cond_broadcast(&condNormal);
+    }
+    if (isvip >= 2)
+    {
+        pthread_cond_broadcast(&condVip);
+    }
+    pthread_cond_broadcast(&condNormal);
+
+    pthread_mutex_unlock(&mutex);
 }
 
 void *client(void *arg)
 {
 
-	client_t* c = (client_t*) arg;
+    struct tCliente *cliente = (struct tCliente *)arg;
 
-    pthread_mutex_lock(&m);
-    if(c->isvip){
-        c->ticket = ticketsVips++;
-        vips++;
+    printf("+ Cliente[%d][%s] ha sido creado\n", cliente->id, VIPSTR(cliente->isvip));
+    // while(FOREVER){
+    if (cliente->isvip == 2)
+    {
+        enter_special_client(cliente->id);
     }
-    else c->ticket = ticketsNormales++;
-
-    pthread_mutex_unlock(&m);
-
-	if (c->isvip)
-        enter_vip_client(c->id, c->ticket);
+    else if (cliente->isvip == 1)
+    {
+        enter_vip_client(cliente->id);
+    }
     else
-        enter_normal_client(c->id, c->ticket);
-
-}
-
-
-int main(int argc, void* argv[]){
-
-	//Discoteca de aforo CAPACITY.
-	//Si el aforo esta completo los nuevos clientes deberan esperar a que salga algun cliente
-	//Si hay esperando clientes vip y clientes normales, se les dara prioridad a los clientes vip.
-	//Los clientes entraran de 1 en 1 en orden estricto de llegada segun su grupo
-
-	if(argc != 2) {
-		printf("Usage ./disco <clients file name>\n");
-		return -1;
-	}
-    int aforoMaxmo = MAX_AFORO;
-
-    pthread_mutex_init(&m, NULL);
-	pthread_cond_init(&normalClient, NULL);
-	pthread_cond_init(&vipClient, NULL);
-
-
-    FILE* fichero = fopen(argv[1],"r");
-    char* buffer= malloc(8 * sizeof(char));
-
-    fscanf(fichero,"%s",buffer);
-    int numeroClientes = atoi(buffer);
-
-    client_t clientInfo[numeroClientes];
-    pthread_t clientes[numeroClientes];
-
-    // while(fscanf(fichero,"%s",buffer)!=EOF){
-    //     printf("%s\n",buffer);
-    //     clientInfo[i].id=i;
-    //     clientInfo[i].isvip = atoi(buffer);
-    //     clientInfo[i].ticket=-1;
-    //     i++;
-    //     if(pthread_create(&clientes[i],NULL,client,&clientInfo[i])!=0){
-    //         perror("Error al crear el hilo");
-    //         exit(EXIT_FAILURE);
-    //     }
-
-    // };
-
-
-	for(int i = 0; i < numeroClientes ; i++){
-		fscanf(fichero,"%s",buffer);
-		clientInfo[i].id = i;
-		clientInfo[i].isvip = atoi(buffer);
-		clientInfo[i].ticket = -1;
-        
-		if(pthread_create(&clientes[i], NULL, client, &clientInfo[i])!=0){
-            perror("Error al crear los hilos");
-            exit(EXIT_FAILURE);
-        }
-	}
-
-
-    for(int j=0; j< numeroClientes;j++){
-        if(pthread_join(clientes[j],NULL)!=0){
-            perror("Error al cerrar los hilos");
-            exit(EXIT_FAILURE);
-        }
+    {
+        enter_normal_client(cliente->id);
     }
+    dance(cliente->id, cliente->isvip);
 
-    exit(EXIT_SUCCESS);
+    disco_exit(cliente->id, cliente->isvip);
+    //}
 }
